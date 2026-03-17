@@ -1,4 +1,4 @@
-resource "aws_instance" "ec2-server" {
+resource "aws_instance" "ec2_server" {
 
   ami           = var.ami_id
   instance_type = var.instance_type
@@ -8,27 +8,12 @@ resource "aws_instance" "ec2-server" {
     aws_security_group.ec2_sg.id
   ]
 
-  user_data = <<-EOF
-#!/bin/bash
-
-USERNAME="subhash"
-PUBLIC_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICrjFOXEHv8XayVTBqgkHog2gt+TqXOwy5culmTK68Oa SYNAMEDIA+skumarsingh@LTskumars-0DB88"
-
-useradd -m -s /bin/bash $USERNAME
-mkdir -p /home/$USERNAME/.ssh
-
-echo "$PUBLIC_KEY" > /home/$USERNAME/.ssh/authorized_keys
-
-chmod 700 /home/$USERNAME/.ssh
-chmod 600 /home/$USERNAME/.ssh/authorized_keys
-
-chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
-
-echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME
-chmod 440 /etc/sudoers.d/$USERNAME
-EOF
+  user_data = templatefile("${path.module}/user_data.sh", {
+    username   = var.username
+    public_key = var.public_key
+  })
 
   tags = {
-    Name = "ec2-server"
+    Name = var.instance_name
   }
 }
