@@ -1,14 +1,41 @@
 #!/bin/bash
 
-useradd -m -s /bin/bash ${username}
-mkdir -p /home/${username}/.ssh
+set -e
 
-echo "${public_key}" > /home/${username}/.ssh/authorized_keys
+echo "===== Updating system ====="
+sudo yum update -y
 
-chmod 700 /home/${username}/.ssh
-chmod 600 /home/${username}/.ssh/authorized_keys
+echo "===== Installing Java (required for Jenkins) ====="
+sudo yum install -y java-17-openjdk
 
-chown -R ${username}:${username} /home/${username}/.ssh
+echo "===== Adding Jenkins repository ====="
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+https://pkg.jenkins.io/redhat-stable/jenkins.repo
 
-echo "${username} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${username}
-chmod 440 /etc/sudoers.d/${username}
+echo "===== Importing Jenkins GPG key ====="
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+echo "===== Installing Jenkins ====="
+sudo yum install -y jenkins
+
+echo "===== Reloading systemd ====="
+sudo systemctl daemon-reexec
+
+echo "===== Enabling Jenkins service ====="
+sudo systemctl enable jenkins
+
+echo "===== Starting Jenkins ====="
+sudo systemctl start jenkins
+
+echo "===== Checking Jenkins status ====="
+sudo systemctl status jenkins --no-pager
+
+echo "===== Opening firewall port 8080 ====="
+sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --reload
+
+echo "===== Jenkins installation completed ====="
+echo "Access Jenkins at: http://<your-server-ip>:8080"
+
+echo "===== Initial Admin Password ====="
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
